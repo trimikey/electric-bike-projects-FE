@@ -1,21 +1,40 @@
-// lib/apiClient.ts
 import axios from "axios";
+import { getSession } from "next-auth/react";
 
-// ✅ Tạo axios instance chung
 const apiClient = axios.create({
-  baseURL: "http://localhost:3001", // URL BE
-  withCredentials: false, // bạn đang dùng JWT, không cần cookie
+  baseURL: process.env.NEXT_PUBLIC_BE_URL || "http://localhost:3001",
 });
 
-// ✅ Interceptor tự động gắn Authorization
-apiClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem("accessToken");
-  console.log("🧩 Token trong localStorage:", token); // 👈 in ra
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  } else {
-    console.warn("⚠️ Không tìm thấy token trong localStorage!");
+apiClient.interceptors.request.use(async (config) => {
+  let token = null;
+
+  // ✅ Ưu tiên localStorage
+  if (typeof window !== "undefined") {
+    token = localStorage.getItem("accessToken");
+    console.log("🔑 Token từ localStorage:", token);
   }
+
+  // ✅ Nếu localStorage trống, lấy từ NextAuth
+  if (!token) {
+    const session = await getSession();
+    token =
+      session?.accessToken ||
+      session?.user?.accessToken ||
+      null;
+    console.log("🔄 Token từ NextAuth:", token);
+  }
+
+  // ✅ Nếu vẫn chưa có token, cancel request
+  if (!token) {
+    console.warn("⚠️ Không có token, hủy request");
+    return Promise.reject({ message: "No token provided" });
+  }
+
+  // ✅ Gắn vào header Authorization
+  config.headers = config.headers || {};
+  (config.headers as any).Authorization = `Bearer ${token}`;
+
   return config;
 });
+
 export default apiClient;
