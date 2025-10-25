@@ -1,13 +1,23 @@
 "use client";
 import apiClient from "@/lib/api";
 import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
 
 export default function VehicleList() {
   const [vehicles, setVehicles] = useState<any[]>([]);
+  const { data: session, status } = useSession();
 
   useEffect(() => {
+    if (status !== "authenticated") {
+      return;
+    }
+
     const fetchVehicles = async () => {
       try {
+        if (!session?.user?.accessToken) {
+          console.warn("[VehicleList] Session chưa có access token, bỏ qua fetch");
+          return;
+        }
         const res = await apiClient.get("/vehicles/models"); // 👈 tự gắn token ở đây
         setVehicles(res.data);
       } catch (err: any) {
@@ -15,7 +25,7 @@ export default function VehicleList() {
       }
     };
     fetchVehicles();
-  }, []);
+  }, [status, session?.user?.accessToken]);
 
   return (
     <section className="p-6">
