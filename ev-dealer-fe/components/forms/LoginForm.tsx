@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { signIn } from "next-auth/react";
+import { useState, useEffect } from "react";
+import { signIn, useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 
 export default function LoginForm() {
@@ -9,17 +10,40 @@ export default function LoginForm() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const { data: session, status } = useSession();
+  const router = useRouter();
 
-  // 🔹 Đăng nhập nội bộ (qua Credentials Provider)
+  // ✅ Nếu đã đăng nhập rồi thì tự động redirect đúng dashboard
+  useEffect(() => {
+    if (status === "authenticated" && session?.user?.role_name) {
+      const role = session.user.role_name;
+      console.log("🔄 Redirect from /login ->", role);
+      switch (role) {
+        case "Admin":
+          router.push("/dashboard/admin");
+          break;
+        case "EVM Staff":
+          router.push("/dashboard/evm");
+          break;
+        case "Dealer Manager":
+        case "Dealer Staff":
+          router.push("/dashboard/dealer");
+          break;
+        default:
+          router.push("/dashboard/customer");
+      }
+    }
+  }, [status, session, router]);
+
+  // 🔹 Đăng nhập nội bộ (Credentials)
   const handleInternalLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
 
     try {
-      // Gọi NextAuth → CredentialsProvider sẽ call BE /users/login
       const res = await signIn("credentials", {
-        redirect: false, // không redirect ngay, tự điều hướng thủ công
+        redirect: false,
         email,
         password,
       });
@@ -27,27 +51,26 @@ export default function LoginForm() {
       if (res?.error) {
         setError("Sai email hoặc mật khẩu!");
       } else {
-        // ✅ Lấy lại session để biết role
+        // ✅ Lấy session để lấy role
         const sessionRes = await fetch("/api/auth/session");
         const session = await sessionRes.json();
         const role = session?.user?.role_name;
 
-        console.log("🔍 Role name:", role);
+        console.log("🔍 Role:", role);
 
-        // ✅ Redirect đúng dashboard theo role
         switch (role) {
           case "Admin":
-            window.location.href = "/dashboard/admin";
+            router.push("/dashboard/admin");
             break;
           case "EVM Staff":
-            window.location.href = "/dashboard/evm";
+            router.push("/dashboard/evm");
             break;
           case "Dealer Manager":
           case "Dealer Staff":
-            window.location.href = "/dashboard/dealer";
+            router.push("/dashboard/dealer");
             break;
           default:
-            window.location.href = "/dashboard/customer";
+            router.push("/dashboard/customer");
         }
       }
     } catch (err) {
@@ -58,9 +81,36 @@ export default function LoginForm() {
     }
   };
 
-  // 🔹 Google login cho Customer
+  // 🔹 Đăng nhập bằng Google (Customer)
   const handleGoogleLogin = async () => {
-    await signIn("google", { callbackUrl: "/dashboard/customer" });
+    try {
+      const googleUser: any = await signIn("google", { redirect: false });
+
+      if (!googleUser) {
+        console.warn("Không lấy được Google ID Token");
+        return;
+      }
+
+      // 🚀 Sau khi Google xác thực xong, lấy lại session
+      const sessionRes = await fetch("/api/auth/session");
+      const session = await sessionRes.json();
+      const email = session?.user?.email;
+      const name = session?.user?.name || "Khách hàng";
+
+      console.log("🌐 Google user:", email);
+
+      // ✅ Gửi request sang BE để đảm bảo Customer tồn tại (optional)
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/google`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, name }),
+      });
+
+      router.push("/dashboard/customer");
+    } catch (err) {
+      console.error("Google login failed:", err);
+      setError("Không thể đăng nhập bằng Google!");
+    }
   };
 
   return (
@@ -68,7 +118,7 @@ export default function LoginForm() {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
-      className="w-full max-w-md mx-auto bg-white rounded-2xl shadow-lg p-8"
+      className="w-full max-w-md mx-auto bg-white rounded-2xl shadow-lg p-8 mt-10"
     >
       <h2 className="text-2xl font-bold text-center text-gray-800 mb-6">
         Đăng nhập
@@ -84,7 +134,9 @@ export default function LoginForm() {
       {/* 🧩 FORM ĐĂNG NHẬP */}
       <form onSubmit={handleInternalLogin} className="space-y-5">
         <div>
-          <label className="block text-sm font-medium text-gray-700">Email</label>
+          <label className="block text-sm font-medium text-gray-700">
+            Email
+          </label>
           <input
             type="email"
             className="w-full mt-1 p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
@@ -96,7 +148,9 @@ export default function LoginForm() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700">Mật khẩu</label>
+          <label className="block text-sm font-medium text-gray-700">
+            Mật khẩu
+          </label>
           <input
             type="password"
             className="w-full mt-1 p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"

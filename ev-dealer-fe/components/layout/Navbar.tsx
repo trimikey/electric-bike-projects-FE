@@ -1,27 +1,61 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 
 export default function Navbar() {
   const { data: session, status } = useSession();
+  const router = useRouter();
   const user = session?.user;
+
+  // 🧭 Hàm xác định dashboard theo role
+  const getDashboardPath = () => {
+    const role = user?.role_name;
+    switch (role) {
+      case "Admin":
+        return "/dashboard/admin";
+      case "EVM Staff":
+        return "/dashboard/evm";
+      case "Dealer Manager":
+      case "Dealer Staff":
+        return "/dashboard/dealer";
+      default:
+        return "/dashboard/customer";
+    }
+  };
+
+  // 🔹 Khi click logo hoặc Dashboard
+  const handleNavigateDashboard = () => {
+    const path = getDashboardPath();
+    router.push(path);
+  };
 
   return (
     <nav className="flex justify-between items-center px-6 py-3 border-b bg-white shadow-sm">
-      <div className="text-lg font-semibold">
-        <Link href="/">EV Dealer</Link>
-      </div>
+      {/* Logo → chuyển đúng dashboard theo role */}
+      <button
+        onClick={handleNavigateDashboard}
+        className="text-lg font-semibold hover:text-blue-600 transition-all"
+      >
+        EV Dealer
+      </button>
 
       <div className="flex items-center gap-4">
-        <Link href="/dashboard">Dashboard</Link>
+        {/* Dashboard link cũng xử lý giống logo */}
+        <button
+          onClick={handleNavigateDashboard}
+          className="text-gray-700 hover:text-blue-600 transition-all"
+        >
+          Dashboard
+        </button>
 
         {status === "loading" ? (
           <span className="text-gray-400 text-sm">Đang tải...</span>
         ) : user ? (
           <>
             <span className="text-sm text-gray-700">
-              👋 Xin chào, <b>{user.name || user.email}</b>
+              👋 Xin chào, <b>{user.username || user.email}</b>
             </span>
             <button
               onClick={() => signOut({ callbackUrl: "/login" })}

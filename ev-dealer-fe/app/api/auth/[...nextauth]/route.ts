@@ -5,17 +5,47 @@ import axios from "axios";
 
 const handler = NextAuth({
   providers: [
-    // 🌐 Google Login (Customer)
+    // 🌐 GOOGLE LOGIN (Customer)
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      authorization: { params: { scope: "openid email profile" } },
+      async profile(profile) {
+        // Lúc Google xác thực xong, gọi BE để đảm bảo Customer tồn tại
+        try {
+          const res = await axios.post(
+            `${process.env.NEXT_PUBLIC_BE_URL}/auth/google`,
+            {
+              email: profile.email,
+              name: profile.name,
+            }
+          );
+          const data = res.data;
+          return {
+            id: data.customer?.id || profile.sub,
+            name: data.customer?.full_name || profile.name,
+            email: profile.email,
+            role_name: "Customer",
+            accessToken: data.accessToken || null,
+            refreshToken: data.refreshToken || null,
+          };
+        } catch (err) {
+          console.error("❌ Google login BE failed:", err);
+          // fallback vẫn cho login Google bình thường
+          return {
+            id: profile.sub,
+            name: profile.name,
+            email: profile.email,
+            role_name: "Customer",
+          };
+        }
+      },
     }),
 
-    // 🔑 Internal login (Admin / Dealer / EVM Staff)
+    // 🔑 INTERNAL LOGIN (Admin / Dealer / EVM Staff)
     CredentialsProvider({
       name: "Credentials",
       credentials: { email: {}, password: {} },
-
       async authorize(credentials) {
         try {
           const res = await axios.post(
@@ -27,7 +57,6 @@ const handler = NextAuth({
           );
 
           const { user } = res.data;
-          // 🧩 BE trả token nằm trong res.data.token → tách ra:
           const accessToken = res.data?.token?.accessToken;
           const refreshToken = res.data?.token?.refreshToken;
 
@@ -50,12 +79,12 @@ const handler = NextAuth({
       if (user) {
         token.accessToken = (user as any).accessToken;
         token.refreshToken = (user as any).refreshToken;
-        token.role_name = (user as any).role_name;
+        token.role_name = (user as any).role_name || "Customer";
       }
       return token;
     },
 
-    // ✅ Đưa token vào session để FE đọc
+    // ✅ Đưa token vào session để FE đọc được role_name
     async session({ session, token }) {
       (session as any).accessToken = token.accessToken;
       (session as any).refreshToken = token.refreshToken;
