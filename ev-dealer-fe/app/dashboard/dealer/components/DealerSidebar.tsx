@@ -1,6 +1,6 @@
 "use client";
 
-import { Home, Car, ShoppingCart, Users, BarChart, CalendarClock, Building2 } from "lucide-react";
+import { Home, Car, ShoppingCart, Users, BarChart, CalendarClock, Building2, Building } from "lucide-react";
 
 const menuItems = [
   { id: "overview", label: "Tổng quan", icon: Home },
@@ -8,7 +8,10 @@ const menuItems = [
   { id: "sales", label: "Bán hàng", icon: ShoppingCart },
   { id: "customers", label: "Khách hàng", icon: Users },
   { id: "testdrive", label: "Lịch lái thử", icon: CalendarClock },
-  { id: "dealers", label: "Quản lý đại lý", icon: Building2 }, // thêm icon Building2
+  { id: "dealers", label: "Quản lý đại lý", icon: Building2 },
+  { id: "orders", label: "Quản lý order", icon: Building },
+  
+  // thêm icon Building2
  // ✅ thêm dòng này
   { id: "reports", label: "Báo cáo", icon: BarChart },
 
