@@ -6,33 +6,56 @@ const apiClient = axios.create({
 });
 
 apiClient.interceptors.request.use(async (config) => {
-  let token = null;
+  // If running on the server, just return config (no browser storage/session)
+  if (typeof window === "undefined") return config;
 
-  // ✅ Ưu tiên localStorage
-  if (typeof window !== "undefined") {
-    token = localStorage.getItem("accessToken");
-    console.log("🔑 Token từ localStorage:", token);
-  }
-
-  // ✅ Nếu localStorage trống, lấy từ NextAuth
-  if (!token) {
+  // ✅ Prefer NextAuth session token (fresh), fallback to localStorage only if missing
+  let token: string | null = null;
+  try {
     const session = await getSession();
-    token =
-      session?.accessToken ||
-      session?.user?.accessToken ||
-      null;
-    console.log("🔄 Token từ NextAuth:", token);
+    const sessionToken = (session as any)?.accessToken || (session as any)?.user?.accessToken || null;
+    console.log("� Token từ NextAuth:", sessionToken);
+    token = sessionToken as string | null;
+  } catch (e) {
+    console.warn("⚠️ getSession() failed:", e);
   }
 
-  // ✅ Nếu vẫn chưa có token, cancel request
+  // If session token not available, try localStorage (may be legacy/stale)
+  if (!token) {
+    try {
+      const raw = localStorage.getItem("accessToken");
+      console.log("🔑 Token raw từ localStorage:", raw);
+      if (raw) {
+        // If the app accidentally stored an object, try parse; otherwise use raw
+        try {
+          const parsed = JSON.parse(raw);
+          // If parsed is an object with accessToken property, use it
+          if (parsed && typeof parsed === "object") {
+            token = (parsed.accessToken as string) || (parsed.token as string) || null;
+          } else if (typeof parsed === "string") {
+            token = parsed;
+          }
+        } catch (err) {
+          // not JSON, use raw value
+          token = raw;
+        }
+      }
+    } catch (e) {
+      console.warn("⚠️ Could not read localStorage:", e);
+    }
+  }
+
+  // If still no token, cancel request (no credentials)
   if (!token) {
     console.warn("⚠️ Không có token, hủy request");
     return Promise.reject({ message: "No token provided" });
   }
 
-  // ✅ Gắn vào header Authorization
+  // Ensure we don't send 'Bearer Bearer ...' if a stored token already had the prefix
+  const cleaned = (typeof token === "string" && token.startsWith("Bearer ")) ? token.slice(7) : token;
+
   config.headers = config.headers || {};
-  (config.headers as any).Authorization = `Bearer ${token}`;
+  (config.headers as any).Authorization = `Bearer ${cleaned}`;
 
   return config;
 });
