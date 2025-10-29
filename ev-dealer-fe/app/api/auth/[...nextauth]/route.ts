@@ -10,8 +10,8 @@ const handler = NextAuth({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
       authorization: { params: { scope: "openid email profile" } },
+
       async profile(profile) {
-        // Lúc Google xác thực xong, gọi BE để đảm bảo Customer tồn tại
         try {
           const res = await axios.post(
             `${process.env.NEXT_PUBLIC_BE_URL}/auth/google`,
@@ -20,18 +20,19 @@ const handler = NextAuth({
               name: profile.name,
             }
           );
+
           const data = res.data;
+
           return {
             id: data.customer?.id || profile.sub,
             name: data.customer?.full_name || profile.name,
             email: profile.email,
-            role_name: "Customer",
-            accessToken: data.accessToken || null,
-            refreshToken: data.refreshToken || null,
+            role_name: data.customer?.role_name || "Customer",
+            accessToken: data?.accessToken || null,
+            refreshToken: data?.refreshToken || null,
           };
         } catch (err) {
           console.error("❌ Google login BE failed:", err);
-          // fallback vẫn cho login Google bình thường
           return {
             id: profile.sub,
             name: profile.name,
@@ -46,6 +47,7 @@ const handler = NextAuth({
     CredentialsProvider({
       name: "Credentials",
       credentials: { email: {}, password: {} },
+
       async authorize(credentials) {
         try {
           const res = await axios.post(
@@ -64,7 +66,14 @@ const handler = NextAuth({
             throw new Error("Login response invalid");
           }
 
-          return { ...user, accessToken, refreshToken };
+          return {
+            id: user.id,
+            email: user.email,
+            name: user.full_name || user.email,
+            role_name: user.role_name,
+            accessToken,
+            refreshToken,
+          };
         } catch (err: any) {
           console.error("❌ authorize() error:", err.response?.data || err);
           throw new Error("Đăng nhập thất bại");
@@ -74,24 +83,32 @@ const handler = NextAuth({
   ],
 
   callbacks: {
-    // ✅ Lưu token từ authorize() vào JWT
+    // ✅ Lưu token vào JWT
     async jwt({ token, user }) {
       if (user) {
+        token.id = user.id;
+        token.email = user.email;
+        token.name = user.name;
+        token.role_name = user.role_name;
         token.accessToken = (user as any).accessToken;
         token.refreshToken = (user as any).refreshToken;
-        token.role_name = (user as any).role_name || "Customer";
       }
       return token;
     },
 
-    // ✅ Đưa token vào session để FE đọc được role_name
+    // ✅ Truyền token sang session cho FE
     async session({ session, token }) {
-      (session as any).accessToken = token.accessToken;
-      (session as any).refreshToken = token.refreshToken;
-      (session as any).role_name = token.role_name;
-      (session.user as any).accessToken = token.accessToken;
-      (session.user as any).refreshToken = token.refreshToken;
-      (session.user as any).role_name = token.role_name;
+      session.user = {
+        id: token.id,
+        email: token.email,
+        name: token.name,
+        role_name: token.role_name,
+        accessToken: token.accessToken,
+      };
+
+      session.accessToken = token.accessToken;
+      session.refreshToken = token.refreshToken;
+
       return session;
     },
   },
