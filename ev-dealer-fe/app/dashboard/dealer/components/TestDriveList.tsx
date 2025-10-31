@@ -90,10 +90,9 @@ export default function TestDriveList() {
   return (
     <section className="p-6">
       {/* Header */}
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-semibold">📅 Quản lý lịch lái thử</h2>
+      <div className="flex justify-end items-center mb-4">
         <button
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"
+          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-end gap-2"
           onClick={() => setShowModal(true)}
         >
           <CalendarPlus size={18} />
@@ -148,7 +147,7 @@ export default function TestDriveList() {
                       {td.status}
                     </span>
                   </td>
-                  <td className="p-3 text-right space-x-3">
+                  <td className="p-3 text-right space-x-2">
                     {td.status === "scheduled" && (
                       <>
                         <button
