@@ -4,14 +4,10 @@ import apiClient from "@/lib/api";
 import { useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { vnd } from "@/app/utils/currency";
 
 // ---- helper format VND (an toàn với undefined / string DECIMAL) ----
-const vnd = (n?: number | string | null) => {
-  if (n === null || n === undefined) return "—";
-  const num = typeof n === "string" ? Number(n) : n;
-  if (Number.isNaN(num)) return "—";
-  return num.toLocaleString("vi-VN") + " đ";
-};
+
 
 // ---- typess ----
 type Manufacturer = { id: string; name: string };

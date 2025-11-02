@@ -5,49 +5,16 @@ import axios from "axios";
 
 const handler = NextAuth({
   providers: [
-    // 🌐 GOOGLE LOGIN (Customer)
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
       authorization: { params: { scope: "openid email profile" } },
-
-      async profile(profile) {
-        try {
-          const res = await axios.post(
-            `${process.env.NEXT_PUBLIC_BE_URL}/auth/google`,
-            {
-              email: profile.email,
-              name: profile.name,
-            }
-          );
-
-          const data = res.data;
-
-          return {
-            id: data.customer?.id || profile.sub,
-            name: data.customer?.full_name || profile.name,
-            email: profile.email,
-            role_name: data.customer?.role_name || "Customer",
-            accessToken: data?.accessToken || null,
-            refreshToken: data?.refreshToken || null,
-          };
-        } catch (err) {
-          console.error("❌ Google login BE failed:", err);
-          return {
-            id: profile.sub,
-            name: profile.name,
-            email: profile.email,
-            role_name: "Customer",
-          };
-        }
-      },
+      // ❌ Không override profile() để gọi BE ở đây nữa
     }),
 
-    // 🔑 INTERNAL LOGIN (Admin / Dealer / EVM Staff)
     CredentialsProvider({
       name: "Credentials",
       credentials: { email: {}, password: {} },
-
       async authorize(credentials) {
         try {
           const res = await axios.post(
@@ -57,14 +24,11 @@ const handler = NextAuth({
               password: credentials?.password,
             }
           );
-
           const { user } = res.data;
           const accessToken = res.data?.token?.accessToken;
           const refreshToken = res.data?.token?.refreshToken;
 
-          if (!user || !accessToken) {
-            throw new Error("Login response invalid");
-          }
+          if (!user || !accessToken) throw new Error("Login response invalid");
 
           return {
             id: user.id,
@@ -83,31 +47,67 @@ const handler = NextAuth({
   ],
 
   callbacks: {
-    // ✅ Lưu token vào JWT
-    async jwt({ token, user }) {
+    /**
+     * Chỗ quan trọng nhất:
+     * - Khi user đăng nhập bằng Google, NextAuth cung cấp `account.id_token` (JWT của Google).
+     * - Gọi BE /auth/google với { idToken } để BE verify và upsert customer.
+     * - Lưu access/refresh token BE trả về vào token của NextAuth.
+     */
+    async jwt({ token, user, account }) {
+      // Giữ thông tin chung (cho cả Credentials)
       if (user) {
-        token.id = user.id;
-        token.email = user.email;
-        token.name = user.name;
-        token.role_name = user.role_name;
-        token.accessToken = (user as any).accessToken;
-        token.refreshToken = (user as any).refreshToken;
+        token.id = (user as any).id ?? token.id;
+        token.email = (user as any).email ?? token.email;
+        token.name = (user as any).name ?? token.name;
+        token.role_name = (user as any).role_name ?? token.role_name;
+        token.accessToken = (user as any).accessToken ?? token.accessToken;
+        token.refreshToken = (user as any).refreshToken ?? token.refreshToken;
       }
+
+      // 🟢 Google OAuth lần đầu đăng nhập:
+      if (account?.provider === "google" && account.id_token) {
+        try {
+          // Gửi đúng ID TOKEN cho BE để verify
+          const resp = await axios.post(
+            `${process.env.NEXT_PUBLIC_BE_URL}/auth/google`,
+            { idToken: account.id_token }
+          );
+
+          const data = resp.data;
+          // Map thông tin từ BE (customer + tokens) vào token của NextAuth
+          token.id = data?.customer?.id || token.id;
+          token.name = data?.customer?.full_name || token.name;
+          token.email = data?.customer?.email || token.email;
+          token.role_name = data?.customer?.role_name || "Customer";
+          token.accessToken = data?.accessToken || token.accessToken || null;
+          token.refreshToken = data?.refreshToken || token.refreshToken || null;
+
+          // (Optional) nếu muốn dùng lại id_token ở FE:
+          token.googleIdToken = account.id_token;
+        } catch (e) {
+          console.error("❌ BE /auth/google verify failed:", e);
+          // Cho phép login tiếp nhưng sẽ không có token BE
+          token.role_name = token.role_name || "Customer";
+        }
+      }
+
       return token;
     },
 
-    // ✅ Truyền token sang session cho FE
+    // ✅ Đưa token sang session cho FE
     async session({ session, token }) {
       session.user = {
-        id: token.id,
-        email: token.email,
-        name: token.name,
-        role_name: token.role_name,
-        accessToken: token.accessToken,
+        id: token.id as string,
+        email: token.email as string,
+        name: token.name as string,
+        role_name: token.role_name as string,
+        accessToken: token.accessToken as string | undefined,
       };
+      session.accessToken = token.accessToken as string | undefined;
+      session.refreshToken = token.refreshToken as string | undefined;
 
-      session.accessToken = token.accessToken;
-      session.refreshToken = token.refreshToken;
+      // (Optional) expose luôn googleIdToken nếu cần cho các call khác
+      (session as any).googleIdToken = (token as any).googleIdToken ?? null;
 
       return session;
     },

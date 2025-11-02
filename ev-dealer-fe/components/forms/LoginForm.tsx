@@ -30,7 +30,7 @@ export default function LoginForm() {
           router.push("/dashboard/dealer");
           break;
         default:
-          router.push("/dashboard/customer");
+          router.push("/customer");
       }
     }
   }, [status, session, router]);
@@ -82,36 +82,42 @@ export default function LoginForm() {
   };
 
   // 🔹 Đăng nhập bằng Google (Customer)
-  const handleGoogleLogin = async () => {
-    try {
-      const googleUser: any = await signIn("google", { redirect: false });
+  // trong LoginForm.tsx
+const handleGoogleLogin = async () => {
+  try {
+    // Cho phép redirect (mặc định) để hoàn tất OAuth handshake
+    await signIn("google"); // có thể truyền callbackUrl nếu muốn
 
-      if (!googleUser) {
-        console.warn("Không lấy được Google ID Token");
-        return;
-      }
+    // Sau khi auth xong, session đã có googleIdToken từ callback
+    const sessionRes = await fetch("/api/auth/session");
+    const session = await sessionRes.json();
 
-      // 🚀 Sau khi Google xác thực xong, lấy lại session
-      const sessionRes = await fetch("/api/auth/session");
-      const session = await sessionRes.json();
-      const email = session?.user?.email;
-      const name = session?.user?.name || "Khách hàng";
-
-      console.log("🌐 Google user:", email);
-
-      // ✅ Gửi request sang BE để đảm bảo Customer tồn tại (optional)
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/google`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, name }),
-      });
-
-      router.push("/dashboard/customer");
-    } catch (err) {
-      console.error("Google login failed:", err);
-      setError("Không thể đăng nhập bằng Google!");
+    const idToken = session?.googleIdToken;
+    if (!idToken) {
+      console.error("Không tìm thấy googleIdToken trong session");
+      setError("Không thể lấy Google ID Token!");
+      return;
     }
-  };
+
+    // Gửi đúng idToken cho BE để verify
+    const resp = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/google`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ idToken }),
+    });
+
+    if (!resp.ok) {
+      const data = await resp.json().catch(() => ({}));
+      throw new Error(data?.message || data?.error || "BE verify failed");
+    }
+
+    router.push("/dashboard/customer");
+  } catch (err) {
+    console.error("Google login failed:", err);
+    setError("Không thể đăng nhập bằng Google!");
+  }
+};
+
 
   return (
     <motion.div
