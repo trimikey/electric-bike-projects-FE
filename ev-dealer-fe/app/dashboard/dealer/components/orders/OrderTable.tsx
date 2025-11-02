@@ -29,7 +29,7 @@ export default function OrderTable({
           {orders.map((o) => (
             <tr key={o.id} className="border-t hover:bg-gray-50">
               <td className="p-3">{o.customer?.full_name || "—"}</td>
-              <td className="p-3">{o.variant?.name || o.variant?.version || "—"}</td>
+              <td className="p-3">{o.variant?.vehicleModel?.name || o.variant?.version || "—"}</td>
               <td className="p-3">{new Date(o.order_date).toLocaleDateString("vi-VN")}</td>
               <td className="p-3 text-right">{vnd(o.total_amount)}</td>
               <td className="p-3">

@@ -2,6 +2,7 @@
 
 import CustomersPage from "../components/CustomerManagement";
 
-export default function DealerOrdersRoute() {
+
+export default function CustomerRoute() {
   return <CustomersPage />;
 }
