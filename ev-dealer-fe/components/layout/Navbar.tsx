@@ -21,9 +21,9 @@ export default function Navbar() {
       case "Dealer Staff":
         return "/dashboard/dealer";
       default:
-        return "/dashboard/customer";
+        return "/customer ";
     }
-  };
+  };  
 
   // 🔹 Khi click logo hoặc Dashboard
   const handleNavigateDashboard = () => {
@@ -55,7 +55,7 @@ export default function Navbar() {
         ) : user ? (
           <>
             <span className="text-sm text-gray-700">
-              👋 Xin chào, <b>{user.username || user.email}</b>
+              👋 Xin chào, <b>{user.name || user.email}</b>
             </span>
             <button
               onClick={() => signOut({ callbackUrl: "/login" })}

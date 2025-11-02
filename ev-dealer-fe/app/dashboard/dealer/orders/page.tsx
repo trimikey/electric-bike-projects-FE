@@ -18,7 +18,7 @@ export default function OrdersPage() {
 
   // returnUrl để MoMo redirect về sau khi thanh toán xong
   const returnUrl = useMemo(
-    () => `${window.location.origin}/payment/momo/return`,
+    () => `${window.location.origin}/dashboard/dealer/momo/success`,
     []
   );
 

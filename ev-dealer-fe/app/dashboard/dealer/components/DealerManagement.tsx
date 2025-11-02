@@ -89,15 +89,7 @@ export default function DealerManagement() {
     <section className="p-6">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-semibold">Quản lý đại lý</h2>
-        <button
-          onClick={() => {
-            setEditing(null);
-            setForm({ name: "", address: "", phone: "", email: "" });
-          }}
-          className="bg-blue-600 text-white px-3 py-1 rounded-md flex items-center gap-1"
-        >
-          <Plus size={16} /> Tạo mới
-        </button>
+        
       </div>
 
       {/* Form thêm/sửa */}
