@@ -11,7 +11,7 @@ type Item = { href: string; label: string; icon: React.ComponentType<{ size?: nu
 const items: Item[] = [
   { href: "/dashboard/dealer",               label: "Tổng quan",      icon: Home },
   { href: "/dashboard/dealer/vehicle",      label: "Danh mục xe",    icon: Car },
-  { href: "/dashboard/dealer/sales",         label: "Bán hàng",       icon: ShoppingCart },
+  { href: "/dashboard/dealer/quotes",         label: "Bán hàng",       icon: ShoppingCart },
   { href: "/dashboard/dealer/customers",     label: "Khách hàng",     icon: Users },
   { href: "/dashboard/dealer/test-drive",    label: "Lịch lái thử",   icon: CalendarClock },
   { href: "/dashboard/dealer/dealers",       label: "Quản lý đại lý", icon: Building2 },
