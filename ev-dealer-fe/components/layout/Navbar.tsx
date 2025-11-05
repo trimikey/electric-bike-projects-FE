@@ -14,9 +14,8 @@ export default function Navbar() {
     const role = user?.role_name;
     switch (role) {
       case "Admin":
-        return "/dashboard/admin";
       case "EVM Staff":
-        return "/dashboard/evm";
+        return "/dashboard/evm"; // Admin và EVM Staff đều vào EVM dashboard
       case "Dealer Manager":
       case "Dealer Staff":
         return "/dashboard/dealer";

@@ -27,7 +27,12 @@ export default function CompareVehiclesPage() {
         );
         setAllSpecs(Array.from(specNames));
       } catch (err: any) {
-        console.error("❌ Lỗi khi tải dữ liệu so sánh:", err.response?.data || err.message);
+        // ✅ Lỗi đã qua interceptor: { status, message, errors, raw }
+        console.error("❌ Lỗi khi tải dữ liệu so sánh:", {
+          status: err?.status,
+          message: err?.message,
+          errors: err?.errors,
+        });
       }
     };
     fetchData();

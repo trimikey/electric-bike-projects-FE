@@ -18,7 +18,12 @@ export default function VehicleList() {
         const res = await apiClient.get("/vehicles/models");
         setVehicles(res.data);
       } catch (err: any) {
-        console.error("❌ Lỗi khi lấy danh sách xe:", err.response?.data || err.message);
+        // ✅ Lỗi đã qua interceptor: { status, message, errors, raw }
+        console.error("❌ Lỗi khi lấy danh sách xe:", {
+          status: err?.status,
+          message: err?.message,
+          errors: err?.errors,
+        });
       }
     };
 

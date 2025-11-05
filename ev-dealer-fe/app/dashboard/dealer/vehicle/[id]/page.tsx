@@ -17,8 +17,13 @@ export default function VehicleDetailPage() {
         const res = await apiClient.get(`/vehicles/models/${id}`);
         setModel(res.data);
       } catch (err: any) {
-        console.error("❌ Lỗi khi lấy chi tiết model:", err.response?.data || err.message);
-        setError(err.response?.data?.message || "Không thể tải chi tiết xe");
+        // ✅ Lỗi đã qua interceptor: { status, message, errors, raw }
+        console.error("❌ Lỗi khi lấy chi tiết model:", {
+          status: err?.status,
+          message: err?.message,
+          errors: err?.errors,
+        });
+        setError(err?.message || "Không thể tải chi tiết xe");
       } finally {
         setLoading(false);
       }

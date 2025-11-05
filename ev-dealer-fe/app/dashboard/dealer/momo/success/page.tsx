@@ -33,7 +33,8 @@ export default function MomoSuccessPage() {
         }
       } catch (e: any) {
         console.error("❌ Verify MoMo thất bại:", e);
-        toast.error(e?.response?.data?.message || "Không xác nhận được thanh toán.");
+        // ✅ Lỗi đã qua interceptor: { status, message, errors, raw }
+        toast.error(e?.message || "Không xác nhận được thanh toán.");
         router.replace("/dashboard/dealer/orders");
       }
     })();

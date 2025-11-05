@@ -17,7 +17,7 @@ export async function middleware(req: NextRequest) {
   if (pathname === "/dashboard") {
     const role = token?.role_name;
     const map: Record<string, string> = {
-      Admin: "/dashboard/admin",
+      Admin: "/dashboard/evm", // Admin cũng vào EVM dashboard
       "EVM Staff": "/dashboard/evm",
       "Dealer Manager": "/dashboard/dealer",
       "Dealer Staff": "/dashboard/dealer",

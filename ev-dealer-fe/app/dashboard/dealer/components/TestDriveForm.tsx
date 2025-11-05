@@ -70,7 +70,12 @@ export default function TestDriveForm({ onClose, onSuccess }: Props) {
                 );
                 setStaffList(filtered);
             } catch (err: any) {
-                console.error("⚠️ Lỗi khi tải dữ liệu:", err.response?.data || err.message);
+                // ✅ Lỗi đã qua interceptor: { status, message, errors, raw }
+                console.error("⚠️ Lỗi khi tải dữ liệu:", {
+                  status: err?.status,
+                  message: err?.message,
+                  errors: err?.errors,
+                });
             }
         };
         fetchData();
@@ -93,8 +98,13 @@ export default function TestDriveForm({ onClose, onSuccess }: Props) {
             onSuccess();
             onClose();
         } catch (err: any) {
-            console.error("❌ Lỗi khi tạo lịch:", err.response?.data || err.message);
-            toast.error("Không thể tạo lịch lái thử");
+            // ✅ Lỗi đã qua interceptor: { status, message, errors, raw }
+            console.error("❌ Lỗi khi tạo lịch:", {
+              status: err?.status,
+              message: err?.message,
+              errors: err?.errors,
+            });
+            toast.error(err?.message || "Không thể tạo lịch lái thử");
         } finally {
             setLoading(false);
         }

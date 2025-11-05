@@ -53,8 +53,14 @@ export default function TestDriveList() {
       const res = await api.get("/test-drives");
       setTestDrives(res.data);
     } catch (err: any) {
-      toast.error("Không thể tải danh sách lịch lái thử");
-      console.error(err.response?.data || err.message);
+      // ✅ Lỗi đã qua interceptor: { status, message, errors, raw }
+      const errorMsg = err?.message || "Không thể tải danh sách lịch lái thử";
+      toast.error(errorMsg);
+      console.error("❌ Lỗi tải test drives:", {
+        status: err?.status,
+        message: err?.message,
+        errors: err?.errors,
+      });
     } finally {
       setLoading(false);
     }

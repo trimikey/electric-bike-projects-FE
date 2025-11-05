@@ -20,10 +20,8 @@ export default function LoginForm() {
       console.log("🔄 Redirect from /login ->", role);
       switch (role) {
         case "Admin":
-          router.push("/dashboard/admin");
-          break;
         case "EVM Staff":
-          router.push("/dashboard/evm");
+          router.push("/dashboard/evm"); // Admin và EVM Staff đều vào EVM dashboard
           break;
         case "Dealer Manager":
         case "Dealer Staff":
@@ -60,10 +58,8 @@ export default function LoginForm() {
 
         switch (role) {
           case "Admin":
-            router.push("/dashboard/admin");
-            break;
           case "EVM Staff":
-            router.push("/dashboard/evm");
+            router.push("/dashboard/evm"); // Admin và EVM Staff đều vào EVM dashboard
             break;
           case "Dealer Manager":
           case "Dealer Staff":

@@ -31,7 +31,12 @@ export default function DealerManagement() {
       const res = await apiClient.get("/dealers");
       setDealers(res.data);
     } catch (err: any) {
-      console.error("❌ Lỗi khi lấy danh sách đại lý:", err.response?.data || err.message);
+      // ✅ Lỗi đã qua interceptor: { status, message, errors, raw }
+      console.error("❌ Lỗi khi lấy danh sách đại lý:", {
+        status: err?.status,
+        message: err?.message,
+        errors: err?.errors,
+      });
     } finally {
       setLoading(false);
     }
@@ -59,7 +64,12 @@ export default function DealerManagement() {
       setEditing(null);
       loadDealers();
     } catch (err: any) {
-      console.error("❌ Lỗi khi lưu đại lý:", err.response?.data || err.message);
+      // ✅ Lỗi đã qua interceptor: { status, message, errors, raw }
+      console.error("❌ Lỗi khi lưu đại lý:", {
+        status: err?.status,
+        message: err?.message,
+        errors: err?.errors,
+      });
     }
   };
 
@@ -70,7 +80,12 @@ export default function DealerManagement() {
       await apiClient.delete(`/dealers/${id}`);
       loadDealers();
     } catch (err: any) {
-      console.error("❌ Lỗi khi xóa:", err.response?.data || err.message);
+      // ✅ Lỗi đã qua interceptor: { status, message, errors, raw }
+      console.error("❌ Lỗi khi xóa:", {
+        status: err?.status,
+        message: err?.message,
+        errors: err?.errors,
+      });
     }
   };
 
