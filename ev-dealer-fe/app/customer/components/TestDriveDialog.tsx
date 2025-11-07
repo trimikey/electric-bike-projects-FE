@@ -1,7 +1,6 @@
-// app/customer/components/TestDriveDialog.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import api from "@/lib/api";
 import toast from "react-hot-toast";
 
@@ -23,21 +22,38 @@ export default function TestDriveDialog({
   const [scheduleAt, setScheduleAt] = useState<string>("");
   const [notes, setNotes] = useState<string>("");
 
+  // 🆕 Số điện thoại
+  const [customerPhone, setCustomerPhone] = useState<string>("");
+
   const [submitting, setSubmitting] = useState(false);
+
+  // (tuỳ chọn) ép min = now + 2h cho input datetime-local
+  const minDateTime = useMemo(() => {
+    const dt = new Date();
+    dt.setHours(dt.getHours() + 2);
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}T${pad(
+      dt.getHours()
+    )}:${pad(dt.getMinutes())}`;
+  }, []);
 
   const submit = async () => {
     if (!dealerId || !scheduleAt) {
       toast.error("Vui lòng chọn đại lý và thời gian");
       return;
     }
+    if (!customerPhone.trim()) {
+      toast.error("Vui lòng nhập số điện thoại");
+      return;
+    }
     try {
       setSubmitting(true);
-      // BE: POST /test-drives/schedule
       await api.post("/test-drives/schedule", {
         dealer_id: dealerId,
         vehicle_model_id: model.id,
         schedule_at: new Date(scheduleAt).toISOString(),
         notes,
+        customer_phone: customerPhone, // ✅ gửi số điện thoại để BE cập nhật Customer
       });
       toast.success("Đã đặt lịch lái thử!");
       onClose();
@@ -74,10 +90,22 @@ export default function TestDriveDialog({
             </select>
           </div>
 
+          {/* 🆕 SĐT khách hàng */}
+          <div>
+            <label className="text-sm">Số điện thoại *</label>
+            <input
+              value={customerPhone}
+              onChange={(e) => setCustomerPhone(e.target.value)}
+              className="mt-1 w-full border rounded-lg px-3 py-2"
+              placeholder="VD: 0901234567"
+            />
+          </div>
+
           <div>
             <label className="text-sm">Thời gian</label>
             <input
               type="datetime-local"
+              min={minDateTime}
               value={scheduleAt}
               onChange={(e) => setScheduleAt(e.target.value)}
               className="mt-1 w-full border rounded-lg px-3 py-2"

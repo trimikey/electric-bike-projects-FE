@@ -11,6 +11,7 @@ import {
   XCircle,
   Loader2,
   StickyNote,
+  Pencil,          // ✅ thêm
 } from "lucide-react";
 import TestDriveForm from "./TestDriveForm";
 
@@ -23,18 +24,27 @@ interface TestDrive {
   dealer?: { id: string; name: string; address: string; phone: string };
   vehicleModel?: { id: string; name: string };
   staff?: { id: string; username: string; email: string };
+  // (tuỳ BE bạn có thêm các *_id hay không, nếu có thì giữ cả id)
+  customer_id?: string;
+  dealer_id?: string;
+  vehicle_model_id?: string;
+  staff_id?: string;
 }
 
 export default function TestDriveList() {
   const [testDrives, setTestDrives] = useState<TestDrive[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showModal, setShowModal] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   // Modal ghi chú
   const [noteOpen, setNoteOpen] = useState(false);
   const [noteEditing, setNoteEditing] = useState("");
   const [noteTdId, setNoteTdId] = useState<string | null>(null);
   const [savingNote, setSavingNote] = useState(false);
+
+  // ✅ Modal chỉnh sửa
+  const [editOpen, setEditOpen] = useState(false);
+  const [editingTd, setEditingTd] = useState<TestDrive | null>(null);
 
   const loadTestDrives = async () => {
     try {
@@ -53,7 +63,6 @@ export default function TestDriveList() {
     loadTestDrives();
   }, []);
 
-  // ✅ Đổi sang PATCH /test-drives/:id
   const handleStatusChange = async (id: string, status: TestDrive["status"]) => {
     try {
       await api.patch(`/test-drives/${id}`, { status });
@@ -75,14 +84,12 @@ export default function TestDriveList() {
     }
   };
 
-  // Mở modal ghi chú
+  // Ghi chú
   const openNote = (td: TestDrive) => {
     setNoteTdId(td.id);
     setNoteEditing(td.notes || "");
     setNoteOpen(true);
   };
-
-  // ✅ Lưu ghi chú qua PATCH /test-drives/:id
   const saveNote = async () => {
     if (!noteTdId) return;
     try {
@@ -98,12 +105,18 @@ export default function TestDriveList() {
     }
   };
 
+  // ✅ Chỉnh sửa
+  const openEdit = (td: TestDrive) => {
+    setEditingTd(td);
+    setEditOpen(true);
+  };
+
   return (
     <section className="p-6">
       <div className="flex justify-end items-center mb-4">
         <button
           className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"
-          onClick={() => setShowModal(true)}
+          onClick={() => setShowCreateModal(true)}
         >
           <CalendarPlus size={18} />
           Tạo lịch mới
@@ -191,7 +204,16 @@ export default function TestDriveList() {
                       </span>
                     </td>
 
-                    <td className=" text-right space-x-3">
+                    <td className="text-right space-x-3">
+                      {/* ✅ Nút sửa */}
+                      <button
+                        className="text-blue-600 hover:text-blue-800"
+                        onClick={() => openEdit(td)}
+                        title="Chỉnh sửa"
+                      >
+                        <Pencil size={18} />
+                      </button>
+
                       {td.status === "scheduled" && (
                         <>
                           <button
@@ -231,10 +253,28 @@ export default function TestDriveList() {
       )}
 
       {/* Modal tạo lịch */}
-      {showModal && (
+      {showCreateModal && (
         <TestDriveForm
-          onClose={() => setShowModal(false)}
+          mode="create"               // ✅ thêm
+          onClose={() => setShowCreateModal(false)}
           onSuccess={() => loadTestDrives()}
+        />
+      )}
+
+      {/* ✅ Modal chỉnh sửa */}
+      {editOpen && editingTd && (
+        <TestDriveForm
+          mode="edit"
+          initialData={editingTd}
+          onClose={() => {
+            setEditOpen(false);
+            setEditingTd(null);
+          }}
+          onSuccess={() => {
+            setEditOpen(false);
+            setEditingTd(null);
+            loadTestDrives();
+          }}
         />
       )}
 
