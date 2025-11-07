@@ -4,7 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Home, Car, ShoppingCart, Users, BarChart, CalendarClock, Building2, Building,
-  Check
+  Check,
+  Truck
 } from "lucide-react";
 
 type Item = { href: string; label: string; icon: React.ComponentType<{ size?: number }> };
@@ -19,6 +20,8 @@ const items: Item[] = [
   { href: "/dashboard/dealer/orders",        label: "Quản lý order",  icon: Building },
   { href: "/dashboard/dealer/reports",       label: "Báo cáo",        icon: BarChart },
   { href: "/dashboard/dealer/complaints",        label: "Quản lý complaint",  icon: Check },
+ { href: "/dashboard/dealer/shipments",        label: "Quản lý giao hàng",  icon: Truck },
+
 
 
 ];
